@@ -2,26 +2,39 @@
   "name": "nextjs-password-protect",
   "version": "1.0.0",
   "description": "A reusable password protection module for Next.js applications with secure token-based authentication",
-  "main": "./index.ts",
-  "module": "./index.ts",
-  "types": "./index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./index.ts",
-      "default": "./index.ts"
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
-    "./api-route-template": "./api-route-template.ts"
+    "./api-route-template": {
+      "import": "./dist/api-route-template.js",
+      "require": "./dist/api-route-template.js",
+      "types": "./dist/api-route-template.d.ts"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "*.ts",
-    "*.tsx",
+    "dist",
+    "api-route-template.ts",
+    "index.ts",
+    "context.tsx",
+    "PasswordProtect.tsx",
+    "PasswordProtectWrapper.tsx",
+    "types.ts",
+    "tsconfig.build.json",
     "README.md",
     "SETUP.md",
     "EXAMPLE.md"
   ],
   "scripts": {
-    "build": "tsc --noEmit",
-    "prepublishOnly": "npm run build",
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
     "test": "echo 'No tests specified'"
   },
   "keywords": [

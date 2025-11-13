@@ -1,6 +1,3 @@
-# Build output (if using compiled version)
-dist/
-
 # Development files
 node_modules/
 .DS_Store

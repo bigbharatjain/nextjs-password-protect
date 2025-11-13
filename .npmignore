@@ -1,0 +1,32 @@
+# Build output (if using compiled version)
+dist/
+
+# Development files
+node_modules/
+.DS_Store
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Git
+.git/
+.gitignore
+
+# Build config (optional, can be included)
+tsconfig.build.json
+
+# Package files (keep only what's needed)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+

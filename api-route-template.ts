@@ -34,11 +34,11 @@ function createTokenHash(token: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { password, token } = await request.json();
+    const { password, token: requestToken } = await request.json();
     
     // Token validation endpoint (prevents localStorage manipulation)
-    if (token) {
-      const tokenHash = createTokenHash(token);
+    if (requestToken) {
+      const tokenHash = createTokenHash(requestToken);
       const tokenData = tokenStore.get(tokenHash);
       
       if (!tokenData) {
@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Generate secure token
-    const token = generateToken();
-    const tokenHash = createTokenHash(token);
+    const newToken = generateToken();
+    const tokenHash = createTokenHash(newToken);
     const expiresIn = 24 * 60 * 60 * 1000; // 24 hours
     
     tokenStore.set(tokenHash, {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      token, // Return plain token to client (hash is stored server-side)
+      token: newToken, // Return plain token to client (hash is stored server-side)
     });
   } catch (error) {
     return NextResponse.json(

@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, KeyboardEvent } from 'react';
 import { usePasswordProtect } from './context';
+import NextjsLogo from './NextjsLogo';
 
 export function PasswordProtect() {
   const { authenticate, config } = usePasswordProtect();
@@ -30,7 +31,7 @@ export function PasswordProtect() {
   };
 
   const renderLogo = () => {
-    if (!config.logo) return null;
+    if (!config.logo) return <NextjsLogo className="h-auto w-[220px] mb-8 object-contain" />;
 
     if (typeof config.logo === 'string') {
       return (
@@ -47,30 +48,24 @@ export function PasswordProtect() {
 
   return (
     <div
-      className={`min-h-screen flex items-center justify-center px-4 ${config.className || ''}`}
-      style={{ backgroundColor: 'var(--background, #ffffff)' }}
+      className={`min-h-screen bg-background flex items-center justify-center px-4 ${config.className || ''}`}
     >
       <div className="w-full max-w-md">
         <div 
-          className="rounded-2xl shadow-xl p-8 md:p-10"
-          style={{ 
-            backgroundColor: 'var(--background, #ffffff)',
-            border: '1px solid var(--border, rgba(0, 0, 0, 0.1))'
-          }}
+          className="rounded-2xl shadow-xl dark:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1)] p-8 md:p-10 border border-foreground/20"
+          
         >
           <div className="flex flex-col items-center text-center">
             {renderLogo()}
             
             <h1 
-              className="text-3xl font-bold mb-3"
-              style={{ color: 'var(--foreground, #171717)' }}
+              className="text-3xl font-bold mb-3 text-foreground"
             >
               {config.title || 'Password Protected'}
             </h1>
             
             <p 
-              className="mb-8 text-sm md:text-base opacity-70"
-              style={{ color: 'var(--foreground, #171717)' }}
+              className="mb-8 text-sm md:text-base opacity-70 text-foreground"
             >
               {config.description || 'Please enter the password to access this application.'}
             </p>
@@ -85,16 +80,11 @@ export function PasswordProtect() {
                     setError(false);
                   }}
                   onKeyDown={handleKeyDown}
-                  className={`w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  className={`w-full px-4 py-3 rounded-lg border-2 border-foreground/20 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 ${
                     error
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                      : 'focus:ring-blue-500 focus:border-blue-500'
+                      : 'focus:ring-foreground/40 focus:border-foreground/40'
                   }`}
-                  style={{
-                    borderColor: error ? '#ef4444' : 'var(--border, rgba(0, 0, 0, 0.2))',
-                    backgroundColor: 'var(--background, #ffffff)',
-                    color: 'var(--foreground, #171717)',
-                  }}
                   placeholder={config.placeholder || 'Enter password'}
                   autoFocus
                   disabled={isSubmitting}
@@ -102,8 +92,7 @@ export function PasswordProtect() {
                 
                 {error && (
                   <p 
-                    className="mt-2 text-sm animate-shake"
-                    style={{ color: '#ef4444' }}
+                    className="mt-2 text-sm animate-shake text-red-500"
                   >
                     {config.errorMessage || 'Incorrect password. Please try again.'}
                   </p>
@@ -113,7 +102,7 @@ export function PasswordProtect() {
               <button
                 type="submit"
                 disabled={isSubmitting || !password.trim()}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full py-3 px-4 bg-foreground hover:bg-foreground/90 disabled:bg-foreground/50 disabled:hover:bg-foreground/50 disabled:cursor-not-allowed text-background font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center">

@@ -1,6 +1,6 @@
 {
   "name": "nextjs-password-protect",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A reusable password protection module for Next.js applications with secure token-based authentication",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -74,4 +74,3 @@
     "node": ">=18.0.0"
   }
 }
-

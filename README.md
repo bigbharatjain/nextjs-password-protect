@@ -37,6 +37,7 @@ npm install nextjs-password-protect
 Copy the API route template to your Next.js app:
 
 **Option A: Copy from node_modules**
+
 ```bash
 cp node_modules/nextjs-password-protect/api-route-template.ts app/api/auth/verify/route.ts
 ```
@@ -46,12 +47,14 @@ cp node_modules/nextjs-password-protect/api-route-template.ts app/api/auth/verif
 Create `app/api/auth/verify/route.ts`:
 
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { createHash, randomBytes } from 'crypto';
+import { NextRequest, NextResponse } from "next/server";
+import { createHash, randomBytes } from "crypto";
 
 // In-memory token store (in production, consider using Redis or a database)
+// Format: { tokenHash: { expiresAt: number, createdAt: number } }
 const tokenStore = new Map<string, { expiresAt: number; createdAt: number }>();
 
+// Clean up expired tokens periodically
 setInterval(() => {
   const now = Date.now();
   for (const [tokenHash, data] of tokenStore.entries()) {
@@ -59,69 +62,82 @@ setInterval(() => {
       tokenStore.delete(tokenHash);
     }
   }
-}, 60000);
+}, 60000); // Clean up every minute
 
 function generateToken(): string {
-  return randomBytes(32).toString('hex');
+  return randomBytes(32).toString("hex");
 }
 
 function createTokenHash(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
+  return createHash("sha256").update(token).digest("hex");
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { password, token } = await request.json();
-    
-    if (token) {
-      const tokenHash = createTokenHash(token);
+    const { password, token: requestToken } = await request.json();
+
+    // Token validation endpoint (prevents localStorage manipulation)
+    if (requestToken) {
+      const tokenHash = createTokenHash(requestToken);
       const tokenData = tokenStore.get(tokenHash);
-      
-      if (!tokenData || tokenData.expiresAt < Date.now()) {
+
+      if (!tokenData) {
         return NextResponse.json(
-          { success: false, error: 'Invalid or expired token' },
+          { success: false, error: "Invalid token" },
           { status: 401 }
         );
       }
-      
-      const expiresIn = 24 * 60 * 60 * 1000;
+
+      if (tokenData.expiresAt < Date.now()) {
+        tokenStore.delete(tokenHash);
+        return NextResponse.json(
+          { success: false, error: "Token expired" },
+          { status: 401 }
+        );
+      }
+
+      // Token is valid, refresh expiration
+      const expiresIn = 24 * 60 * 60 * 1000; // 24 hours
       tokenData.expiresAt = Date.now() + expiresIn;
-      
+
       return NextResponse.json({ success: true, valid: true });
     }
-    
+
+    // Password validation endpoint
     if (!password) {
       return NextResponse.json(
-        { success: false, error: 'Password is required' },
+        { success: false, error: "Password is required" },
         { status: 400 }
       );
     }
-    
-    const correctPassword = process.env.APP_PASSWORD || 'demo123';
-    
+
+    // Get password from server-side environment variable (NOT NEXT_PUBLIC)
+    const correctPassword = process.env.APP_PASSWORD || "demo123";
+
     if (password !== correctPassword) {
       return NextResponse.json(
-        { success: false, error: 'Incorrect password' },
+        { success: false, error: "Incorrect password" },
         { status: 401 }
       );
     }
-    
-    const token = generateToken();
-    const tokenHash = createTokenHash(token);
-    const expiresIn = 24 * 60 * 60 * 1000;
-    
+
+    // Generate secure token
+    const newToken = generateToken();
+    const tokenHash = createTokenHash(newToken);
+    const expiresIn = 24 * 60 * 60 * 1000; // 24 hours
+
     tokenStore.set(tokenHash, {
       expiresAt: Date.now() + expiresIn,
       createdAt: Date.now(),
     });
-    
+
     return NextResponse.json({
       success: true,
-      token,
+      token: newToken, // Return plain token to client (hash is stored server-side)
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: 'Invalid request' },
+      { success: false, error: "Invalid request" },
       { status: 400 }
     );
   }
@@ -141,7 +157,7 @@ APP_PASSWORD=your-secure-password-here
 Wrap your application content in `app/layout.tsx`:
 
 ```tsx
-import { PasswordProtectWrapper } from 'nextjs-password-protect';
+import { PasswordProtectWrapper } from "nextjs-password-protect";
 
 export default function RootLayout({ children }) {
   return (
@@ -164,17 +180,19 @@ export default function RootLayout({ children }) {
 ## Basic Usage
 
 ```tsx
-import { PasswordProtectWrapper } from 'nextjs-password-protect';
+import { PasswordProtectWrapper } from "nextjs-password-protect";
 
 export default function RootLayout({ children }) {
   return (
     <html>
       <body>
         <PasswordProtectWrapper
-          config={{
-            // Password validated via /api/auth/verify endpoint
-            // Set APP_PASSWORD in .env.local (without NEXT_PUBLIC prefix)
-          }}
+          config={
+            {
+              // Password validated via /api/auth/verify endpoint
+              // Set APP_PASSWORD in .env.local (without NEXT_PUBLIC prefix)
+            }
+          }
         >
           {children}
         </PasswordProtectWrapper>
@@ -191,42 +209,56 @@ export default function RootLayout({ children }) {
 The main wrapper component that protects your application.
 
 **Props:**
+
 - `children`: ReactNode - The content to protect
 - `config`: PasswordProtectConfig - Configuration object
 
 ### PasswordProtectConfig
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `password` | `string` | `undefined` | ⚠️ **Deprecated** - Password for client-side validation (visible in bundle). Omit to use secure server-side validation. |
-| `apiEndpoint` | `string` | `"/api/auth/verify"` | API endpoint for server-side password validation |
-| `logo` | `string \| ReactNode` | `undefined` | Optional brand logo (URL/path or React component) |
-| `title` | `string` | `"Password Protected"` | Title text for the password screen |
-| `description` | `string` | `"Please enter the password..."` | Description text |
-| `placeholder` | `string` | `"Enter password"` | Placeholder for password input |
-| `errorMessage` | `string` | `"Incorrect password..."` | Error message on wrong password |
-| `className` | `string` | `undefined` | Custom className for container |
-| `onSuccess` | `() => void` | `undefined` | Callback on successful authentication |
-| `onError` | `() => void` | `undefined` | Callback on failed authentication |
-| `storageKey` | `string` | `"password-protect-auth"` | localStorage key for persistence |
-| `persistAuth` | `boolean` | `true` | Whether to persist auth state |
+| Property       | Type                  | Default                          | Description                                                                                                                           |
+| -------------- | --------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `password`     | `string`              | `undefined`                      | ⚠️ **Deprecated** - Password for client-side validation (visible in bundle). Omit to use secure server-side validation.               |
+| `apiEndpoint`  | `string`              | `"/api/auth/verify"`             | API endpoint for server-side password validation                                                                                      |
+| `logo`         | `string \| ReactNode` | `undefined`                      | Optional brand logo (URL/path or React component)                                                                                     |
+| `title`        | `string`              | `"Password Protected"`           | Title text for the password screen                                                                                                    |
+| `description`  | `string`              | `"Please enter the password..."` | Description text                                                                                                                      |
+| `placeholder`  | `string`              | `"Enter password"`               | Placeholder for password input                                                                                                        |
+| `errorMessage` | `string`              | `"Incorrect password..."`        | Error message on wrong password                                                                                                       |
+| `classNames`   | `object`              | `undefined`                      | Custom class names for UI elements. Keys: `wrapper`, `container`, `logo`, `heading`, `description`, `input`, `button`, `errormessage` |
+| `onSuccess`    | `() => void`          | `undefined`                      | Callback on successful authentication                                                                                                 |
+| `onError`      | `() => void`          | `undefined`                      | Callback on failed authentication                                                                                                     |
+| `storageKey`   | `string`              | `"password-protect-auth"`        | localStorage key for persistence                                                                                                      |
+| `persistAuth`  | `boolean`             | `true`                           | Whether to persist auth state                                                                                                         |
 
 ## Styling
 
 The component automatically inherits your application's theme using CSS variables:
+
 - `--background`: Background color (defaults to white)
 - `--foreground`: Text color (defaults to dark gray)
 - `--border`: Border color (defaults to light gray)
 
-The component will automatically adapt to your application's theme (light/dark mode) without any additional configuration. You can customize the appearance using the `className` prop or by overriding styles.
+The component will automatically adapt to your application's theme (light/dark mode) without any additional configuration. You can customize the appearance using the `classNames` prop to target specific UI elements, or by overriding styles.
 
-**Note:** If your application uses different CSS variable names, you can override styles using the `className` prop or by providing custom CSS.
+**classNames object keys:**
+
+- `wrapper`: Outer wrapper
+- `container`: Main container
+- `logo`: Logo element
+- `heading`: Heading text
+- `description`: Description text
+- `input`: Input field
+- `button`: Submit button
+- `errormessage`: Error message
+
+**Note:** If your application uses different CSS variable names, you can override styles using the `classNames` prop or by providing custom CSS.
 
 ## Security Notes
 
 ⚠️ **Important Security Considerations:**
 
 1. **Token-Based Authentication**: The package uses secure token-based authentication to prevent localStorage manipulation attacks. Tokens are:
+
    - Generated server-side using cryptographically secure random bytes
    - Hashed and stored server-side (only hash is stored, not the token)
    - Validated on every page load/refresh

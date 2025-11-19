@@ -71,6 +71,12 @@ export interface PasswordProtectConfig {
   };
 
   /**
+   * Optional title text for the password protection page
+   * @default "Password Protected"
+   */
+  buttonText?: string;
+
+  /**
    * Optional callback function called when password is successfully entered
    */
   onSuccess?: () => void;

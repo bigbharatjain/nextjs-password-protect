@@ -152,7 +152,30 @@ Create `.env.local` in your project root:
 APP_PASSWORD=your-secure-password-here
 ```
 
-### Step 4: Use in Your App
+### Step 4: Add Tailwind4 CSS Config
+
+Create `tailwind.config.ts`:
+
+```ts
+import type { Config } from "tailwindcss";
+
+const Config = {
+  content: [
+    "./node_modules/nextjs-password-protect/**/*.{js,ts,jsx,tsx}", // Include the Password Protect files
+  ],
+  darkMode: "class",
+};
+
+export default Config;
+```
+
+### Step 5: Include Tailwind4 CSS in `app/globals.css` Top of the CSS file
+
+```css
+@config "./../tailwind.config.ts";
+```
+
+### Step 6: Use in Your App
 
 Wrap your application content in `app/layout.tsx`:
 

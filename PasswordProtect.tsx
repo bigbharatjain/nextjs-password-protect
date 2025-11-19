@@ -162,7 +162,7 @@ export function PasswordProtect() {
                   Verifying...
                 </span>
               ) : (
-                "Access Application"
+                <>{config.buttonText || "Access Application"}</>
               )}
             </button>
           </form>
